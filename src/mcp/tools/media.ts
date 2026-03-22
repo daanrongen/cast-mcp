@@ -10,7 +10,7 @@ export const registerMediaTools = (
   runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
 ) => {
   server.tool(
-    "cast_play_media",
+    "play_media",
     "Play a media URL on a Cast device. Provide the device host (IP or hostname), a direct URL to the media, its MIME type, and optional metadata.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -52,7 +52,7 @@ export const registerMediaTools = (
   );
 
   server.tool(
-    "cast_pause",
+    "pause",
     "Pause the currently playing media on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -77,7 +77,7 @@ export const registerMediaTools = (
   );
 
   server.tool(
-    "cast_resume",
+    "resume",
     "Resume paused media on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -102,7 +102,7 @@ export const registerMediaTools = (
   );
 
   server.tool(
-    "cast_stop",
+    "stop",
     "Stop the current media session on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -127,7 +127,7 @@ export const registerMediaTools = (
   );
 
   server.tool(
-    "cast_seek",
+    "seek",
     "Seek to a position in the currently playing media on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -153,7 +153,7 @@ export const registerMediaTools = (
   );
 
   server.tool(
-    "cast_get_media_status",
+    "get_media_status",
     "Get the current media playback state on a Cast device (player state, position, duration, title, etc.).",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),

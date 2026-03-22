@@ -11,7 +11,7 @@ export const registerQueueTools = (
   runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
 ) => {
   server.tool(
-    "cast_load_queue",
+    "load_queue",
     "Load a playlist of media items onto a Cast device. Items play in order.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -65,7 +65,7 @@ export const registerQueueTools = (
   );
 
   server.tool(
-    "cast_queue_next",
+    "queue_next",
     "Skip to the next item in the queue on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -90,7 +90,7 @@ export const registerQueueTools = (
   );
 
   server.tool(
-    "cast_queue_prev",
+    "queue_prev",
     "Go to the previous item in the queue on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),

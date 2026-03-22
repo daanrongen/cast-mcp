@@ -10,7 +10,7 @@ export const registerDiscoveryTools = (
   runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
 ) => {
   server.tool(
-    "cast_discover_devices",
+    "discover_devices",
     "Scan the local network for Cast-enabled devices (Google Home, Chromecast, Nest Audio, etc.). Returns a list of devices with their name, host, port, type (audio/video/group), and model.",
     {
       timeoutMs: z

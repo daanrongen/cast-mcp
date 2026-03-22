@@ -10,7 +10,7 @@ export const registerAppTools = (
   runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
 ) => {
   server.tool(
-    "cast_get_status",
+    "get_status",
     "Get the receiver status of a Cast device: active application, volume, session info.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -35,7 +35,7 @@ export const registerAppTools = (
   );
 
   server.tool(
-    "cast_launch_app",
+    "launch_app",
     'Launch an app on a Cast device by its appId. Common app IDs: "CC1AD845" (Default Media Receiver), "YouTube" (YouTube), "233637DE" (Google Play Music).',
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -65,7 +65,7 @@ export const registerAppTools = (
   );
 
   server.tool(
-    "cast_stop_app",
+    "stop_app",
     "Stop the currently running app on a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),

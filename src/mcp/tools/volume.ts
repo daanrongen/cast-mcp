@@ -10,7 +10,7 @@ export const registerVolumeTools = (
   runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
 ) => {
   server.tool(
-    "cast_get_volume",
+    "get_volume",
     "Get the current volume level (0.0–1.0) and mute state of a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -35,7 +35,7 @@ export const registerVolumeTools = (
   );
 
   server.tool(
-    "cast_set_volume",
+    "set_volume",
     "Set the volume level of a Cast device. Level must be between 0.0 (silent) and 1.0 (maximum).",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -65,7 +65,7 @@ export const registerVolumeTools = (
   );
 
   server.tool(
-    "cast_mute",
+    "mute",
     "Mute a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
@@ -90,7 +90,7 @@ export const registerVolumeTools = (
   );
 
   server.tool(
-    "cast_unmute",
+    "unmute",
     "Unmute a Cast device.",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
