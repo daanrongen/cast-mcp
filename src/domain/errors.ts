@@ -1,15 +1,11 @@
 import { Data } from "effect";
 
-export class CastDeviceNotFoundError extends Data.TaggedError(
-  "CastDeviceNotFoundError",
-)<{
+export class CastDeviceNotFoundError extends Data.TaggedError("CastDeviceNotFoundError")<{
   readonly deviceId?: string;
   readonly message: string;
 }> {}
 
-export class CastConnectionError extends Data.TaggedError(
-  "CastConnectionError",
-)<{
+export class CastConnectionError extends Data.TaggedError("CastConnectionError")<{
   readonly host: string;
   readonly cause?: unknown;
 }> {}

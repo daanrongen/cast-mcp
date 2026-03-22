@@ -16,9 +16,7 @@ export const registerDiscoveryTools = (
       timeoutMs: z
         .number()
         .optional()
-        .describe(
-          "How long to listen for mDNS responses in milliseconds (default: 5000)",
-        ),
+        .describe("How long to listen for mDNS responses in milliseconds (default: 5000)"),
     },
     {
       title: "Discover Cast Devices",

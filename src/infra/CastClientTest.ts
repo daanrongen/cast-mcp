@@ -1,11 +1,6 @@
 import { Effect, Layer } from "effect";
 import { CastClient } from "../domain/CastClient.ts";
-import {
-  AppInfo,
-  CastDevice,
-  MediaStatus,
-  ReceiverStatus,
-} from "../domain/models.ts";
+import { AppInfo, CastDevice, MediaStatus, ReceiverStatus } from "../domain/models.ts";
 
 const mockDevices = [
   new CastDevice({

@@ -41,9 +41,7 @@ export const registerAppTools = (
       host: z.string().describe("IP address or hostname of the Cast device"),
       appId: z
         .string()
-        .describe(
-          'Cast app ID, e.g. "CC1AD845" for Default Media Receiver or "YouTube"',
-        ),
+        .describe('Cast app ID, e.g. "CC1AD845" for Default Media Receiver or "YouTube"'),
     },
     {
       title: "Launch App",

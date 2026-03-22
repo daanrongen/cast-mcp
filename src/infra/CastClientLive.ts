@@ -382,21 +382,19 @@ export const CastClientLive = Layer.scoped(
           const conn = yield* getConn(host);
           return yield* Effect.tryPromise({
             try: () =>
-              new Promise<{ level: number; muted: boolean }>(
-                (resolve, reject) => {
-                  conn.client.getStatus(
-                    // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                    (err: Error | null, status: any) => {
-                      if (err) reject(err);
-                      else
-                        resolve({
-                          level: status?.volume?.level ?? 0.5,
-                          muted: status?.volume?.muted ?? false,
-                        });
-                    },
-                  );
-                },
-              ),
+              new Promise<{ level: number; muted: boolean }>((resolve, reject) => {
+                conn.client.getStatus(
+                  // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
+                  (err: Error | null, status: any) => {
+                    if (err) reject(err);
+                    else
+                      resolve({
+                        level: status?.volume?.level ?? 0.5,
+                        muted: status?.volume?.muted ?? false,
+                      });
+                  },
+                );
+              }),
             catch: (e) => new CastConnectionError({ host, cause: e }),
           });
         }),
@@ -536,10 +534,8 @@ export const CastClientLive = Layer.scoped(
               new Promise<void>((resolve, reject) => {
                 // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
                 const currentSession = conn.player.media?.currentSession as any;
-                const currentId: number | undefined =
-                  currentSession?.currentItemId;
-                const items: Array<{ itemId: number }> =
-                  currentSession?.items ?? [];
+                const currentId: number | undefined = currentSession?.currentItemId;
+                const items: Array<{ itemId: number }> = currentSession?.items ?? [];
                 const idx = items.findIndex((i) => i.itemId === currentId);
                 const next = items[idx + 1];
                 if (!next) {
@@ -570,10 +566,8 @@ export const CastClientLive = Layer.scoped(
               new Promise<void>((resolve, reject) => {
                 // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
                 const currentSession = conn.player.media?.currentSession as any;
-                const currentId: number | undefined =
-                  currentSession?.currentItemId;
-                const items: Array<{ itemId: number }> =
-                  currentSession?.items ?? [];
+                const currentId: number | undefined = currentSession?.currentItemId;
+                const items: Array<{ itemId: number }> = currentSession?.items ?? [];
                 const idx = items.findIndex((i) => i.itemId === currentId);
                 const prev = items[idx - 1];
                 if (!prev) {

@@ -10,11 +10,7 @@ describe("media", () => {
     const result = await Effect.runPromise(
       Effect.gen(function* () {
         const client = yield* CastClient;
-        return yield* client.playMedia(
-          host,
-          "https://example.com/audio.mp3",
-          "audio/mp3",
-        );
+        return yield* client.playMedia(host, "https://example.com/audio.mp3", "audio/mp3");
       }).pipe(Effect.provide(CastClientTest)),
     );
     expect(result.playerState).toBe("PLAYING");
@@ -25,12 +21,10 @@ describe("media", () => {
     const result = await Effect.runPromise(
       Effect.gen(function* () {
         const client = yield* CastClient;
-        return yield* client.playMedia(
-          host,
-          "https://example.com/audio.mp3",
-          "audio/mp3",
-          { title: "My Track", artist: "Artist Name" },
-        );
+        return yield* client.playMedia(host, "https://example.com/audio.mp3", "audio/mp3", {
+          title: "My Track",
+          artist: "Artist Name",
+        });
       }).pipe(Effect.provide(CastClientTest)),
     );
     expect(result.title).toBe("My Track");

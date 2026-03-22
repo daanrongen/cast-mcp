@@ -11,11 +11,7 @@ export class CastDevice extends Schema.Class<CastDevice>("CastDevice")({
   name: Schema.String,
   host: Schema.String,
   port: Schema.Number,
-  type: Schema.Union(
-    Schema.Literal("audio"),
-    Schema.Literal("video"),
-    Schema.Literal("group"),
-  ),
+  type: Schema.Union(Schema.Literal("audio"), Schema.Literal("video"), Schema.Literal("group")),
   modelName: Schema.String,
   friendlyName: Schema.String,
 }) {}
@@ -29,9 +25,7 @@ export class MediaStatus extends Schema.Class<MediaStatus>("MediaStatus")({
   albumName: Schema.optional(Schema.String),
 }) {}
 
-export class ReceiverStatus extends Schema.Class<ReceiverStatus>(
-  "ReceiverStatus",
-)({
+export class ReceiverStatus extends Schema.Class<ReceiverStatus>("ReceiverStatus")({
   volume: Schema.Number,
   muted: Schema.Boolean,
   applications: Schema.Array(AppInfo),

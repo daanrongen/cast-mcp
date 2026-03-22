@@ -15,9 +15,7 @@ export const registerMediaTools = (
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
       contentUrl: z.string().describe("Direct URL of the media to play"),
-      contentType: z
-        .string()
-        .describe('MIME type, e.g. "audio/mp3" or "video/mp4"'),
+      contentType: z.string().describe('MIME type, e.g. "audio/mp3" or "video/mp4"'),
       title: z.string().optional().describe("Track or video title"),
       artist: z.string().optional().describe("Artist name"),
       albumName: z.string().optional().describe("Album name"),

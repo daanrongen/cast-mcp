@@ -18,9 +18,7 @@ export const registerQueueTools = (
       items: z
         .array(
           z.object({
-            itemId: z
-              .number()
-              .describe("Unique integer ID for this queue item"),
+            itemId: z.number().describe("Unique integer ID for this queue item"),
             contentId: z.string().describe("Direct URL of the media"),
             contentType: z.string().describe('MIME type, e.g. "audio/mp3"'),
             title: z.string().optional().describe("Track title"),
@@ -46,9 +44,7 @@ export const registerQueueTools = (
               contentId: item.contentId,
               contentType: item.contentType,
               metadata:
-                item.title || item.artist
-                  ? { title: item.title, artist: item.artist }
-                  : undefined,
+                item.title || item.artist ? { title: item.title, artist: item.artist } : undefined,
             },
           }),
       );

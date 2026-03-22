@@ -39,11 +39,7 @@ export const registerVolumeTools = (
     "Set the volume level of a Cast device. Level must be between 0.0 (silent) and 1.0 (maximum).",
     {
       host: z.string().describe("IP address or hostname of the Cast device"),
-      level: z
-        .number()
-        .min(0)
-        .max(1)
-        .describe("Volume level between 0.0 and 1.0"),
+      level: z.number().min(0).max(1).describe("Volume level between 0.0 and 1.0"),
     },
     {
       title: "Set Volume",

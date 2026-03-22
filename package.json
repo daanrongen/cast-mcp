@@ -7,7 +7,9 @@
     "cast-mcp": "dist/main.js"
   },
   "main": "./dist/main.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "start": "bun run src/main.ts",
     "dev": "bun --watch src/main.ts",
@@ -31,7 +33,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.8",
     "@types/castv2": "^0.1.3",
     "@types/multicast-dns": "^7.2.4",
     "bun-types": "latest",
