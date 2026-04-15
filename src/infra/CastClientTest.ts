@@ -43,7 +43,7 @@ export const CastClientTest = Layer.succeed(CastClient, {
 
   getStatus: (_host) => Effect.succeed(mockReceiverStatus),
 
-  playMedia: (_host, contentUrl, contentType, metadata) =>
+  playMedia: (_host, _contentUrl, _contentType, metadata) =>
     Effect.succeed(
       new MediaStatus({
         playerState: "PLAYING",

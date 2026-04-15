@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Effect } from "effect";
-import { CastClient } from "../../src/domain/CastClient.ts";
-import { CastClientTest } from "../../src/infra/CastClientTest.ts";
+import { CastClientTest } from "../infra/CastClientTest.ts";
+import { CastClient } from "./CastClient.ts";
 
 describe("media", () => {
   const host = "192.168.1.100";
