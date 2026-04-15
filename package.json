@@ -1,7 +1,7 @@
 {
   "name": "@daanrongen/cast-mcp",
-  "version": "1.0.3",
-  "description": "MCP server for Google Cast — discover devices, play media, control volume, launch apps, and manage queues over stdio",
+  "version": "1.1.0",
+  "description": "MCP server for Google Cast \u2014 discover devices, play media, control volume, launch apps, and manage queues over stdio",
   "type": "module",
   "license": "MIT",
   "repository": {
