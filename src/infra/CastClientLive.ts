@@ -100,6 +100,13 @@ export const CastClientLive = Layer.scoped(
       Map<string, { client: any; player: any }>
     >(new Map());
 
+    const evict = (host: string) =>
+      Ref.update(poolRef, (m) => {
+        const next = new Map(m);
+        next.delete(host);
+        return next;
+      });
+
     const getConn = (host: string, port = 8009) =>
       Effect.gen(function* () {
         const pool = yield* Ref.get(poolRef);
@@ -110,6 +117,11 @@ export const CastClientLive = Layer.scoped(
         const player = yield* launchReceiver(client, host);
         const conn = { client, player };
         yield* Ref.update(poolRef, (m) => new Map(m).set(host, conn));
+
+        // Evict dead connections so the next call reconnects automatically.
+        client.on("error", () => Effect.runFork(evict(host)));
+        client.on("close", () => Effect.runFork(evict(host)));
+
         return conn;
       });
 
