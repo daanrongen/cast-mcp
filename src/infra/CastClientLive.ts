@@ -175,10 +175,15 @@ export const CastClientLive = Layer.scoped(
                 }) => {
                   const all = [...response.answers, ...response.additionals];
 
+                  // Map service instance name → device id so SRV records can
+                  // be matched to the correct pending entry.
+                  const serviceNameToId = new Map<string, string>();
+
                   for (const record of all) {
                     if (record.type === "TXT") {
                       const txt = parseTxt(record.data as Buffer[]);
                       const id = txt.id ?? record.name;
+                      serviceNameToId.set(record.name, id);
                       if (!pending.has(id)) {
                         pending.set(id, { txt, host: "", port: 8009 });
                       }
@@ -189,12 +194,14 @@ export const CastClientLive = Layer.scoped(
                         target: string;
                         port: number;
                       };
-                      // Try to fill in host/port for pending TXT entries
-                      for (const [, p] of pending.entries()) {
-                        if (!p.host) {
-                          p.host = srvData.target;
-                          p.port = srvData.port;
-                        }
+                      // Match this SRV record to its corresponding pending
+                      // entry by service name to avoid assigning the wrong
+                      // host/port on networks with multiple Cast devices.
+                      const id = serviceNameToId.get(record.name);
+                      const entry = id !== undefined ? pending.get(id) : undefined;
+                      if (entry && !entry.host) {
+                        entry.host = srvData.target;
+                        entry.port = srvData.port;
                       }
                     }
                   }
