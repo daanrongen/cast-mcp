@@ -47,6 +47,13 @@
   "engines": {
     "bun": ">=1.0.0"
   },
+  "keywords": [
+    "mcp",
+    "google-cast",
+    "chromecast",
+    "model-context-protocol",
+    "effect"
+  ],
   "publishConfig": {
     "access": "public"
   }

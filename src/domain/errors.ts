@@ -1,10 +1,5 @@
 import { Data } from "effect";
 
-export class CastDeviceNotFoundError extends Data.TaggedError("CastDeviceNotFoundError")<{
-  readonly deviceId?: string;
-  readonly message: string;
-}> {}
-
 export class CastConnectionError extends Data.TaggedError("CastConnectionError")<{
   readonly host: string;
   readonly cause?: unknown;
@@ -22,8 +17,4 @@ export class CastMediaError extends Data.TaggedError("CastMediaError")<{
   readonly cause?: unknown;
 }> {}
 
-export type CastError =
-  | CastDeviceNotFoundError
-  | CastConnectionError
-  | CastUnsupportedCapabilityError
-  | CastMediaError;
+export type CastError = CastConnectionError | CastUnsupportedCapabilityError | CastMediaError;
