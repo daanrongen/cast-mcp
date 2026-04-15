@@ -4,7 +4,7 @@ import { z } from "zod";
 import { CastClient } from "../../domain/CastClient.ts";
 import type { CastError } from "../../domain/errors.ts";
 import { QueueItem } from "../../domain/models.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 export const registerQueueTools = (
   server: McpServer,
@@ -35,7 +35,7 @@ export const registerQueueTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host, items }) => {
+    ({ host, items }) => {
       const queueItems = items.map(
         (item) =>
           new QueueItem({
@@ -49,14 +49,14 @@ export const registerQueueTools = (
           }),
       );
 
-      const result = await runtime.runPromiseExit(
+      return runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.loadQueue(host, queueItems);
+          return { ok: true, itemCount: items.length };
         }),
       );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true, itemCount: items.length });
     },
   );
 
@@ -73,16 +73,15 @@ export const registerQueueTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.queueNext(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 
   server.tool(
@@ -98,15 +97,14 @@ export const registerQueueTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.queuePrev(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 };
