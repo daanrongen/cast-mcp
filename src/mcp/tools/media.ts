@@ -3,7 +3,7 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import { CastClient } from "../../domain/CastClient.ts";
 import type { CastError } from "../../domain/errors.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 export const registerMediaTools = (
   server: McpServer,
@@ -27,13 +27,14 @@ export const registerMediaTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host, contentUrl, contentType, title, artist, albumName }) => {
+    ({ host, contentUrl, contentType, title, artist, albumName }) => {
       const metadata: Record<string, string> = {};
       if (title) metadata.title = title;
       if (artist) metadata.artist = artist;
       if (albumName) metadata.albumName = albumName;
 
-      const result = await runtime.runPromiseExit(
+      return runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           return yield* client.playMedia(
@@ -44,8 +45,6 @@ export const registerMediaTools = (
           );
         }),
       );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
     },
   );
 
@@ -62,16 +61,15 @@ export const registerMediaTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.pauseMedia(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 
   server.tool(
@@ -87,16 +85,15 @@ export const registerMediaTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.resumeMedia(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 
   server.tool(
@@ -112,16 +109,15 @@ export const registerMediaTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.stopMedia(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 
   server.tool(
@@ -138,16 +134,15 @@ export const registerMediaTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host, currentTime }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host, currentTime }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.seekMedia(host, currentTime);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 
   server.tool(
@@ -163,15 +158,13 @@ export const registerMediaTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           return yield* client.getMediaStatus(host);
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };

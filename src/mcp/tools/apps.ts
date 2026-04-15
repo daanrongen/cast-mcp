@@ -3,7 +3,7 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import { CastClient } from "../../domain/CastClient.ts";
 import type { CastError } from "../../domain/errors.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 export const registerAppTools = (
   server: McpServer,
@@ -22,16 +22,14 @@ export const registerAppTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           return yield* client.getStatus(host);
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -50,16 +48,14 @@ export const registerAppTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ host, appId }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host, appId }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           return yield* client.launchApp(host, appId);
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -75,15 +71,14 @@ export const registerAppTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ host }) => {
-      const result = await runtime.runPromiseExit(
+    ({ host }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           yield* client.stopApp(host);
+          return { ok: true };
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess({ ok: true });
-    },
+      ),
   );
 };

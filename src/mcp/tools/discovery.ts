@@ -3,7 +3,7 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import { CastClient } from "../../domain/CastClient.ts";
 import type { CastError } from "../../domain/errors.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 export const registerDiscoveryTools = (
   server: McpServer,
@@ -25,15 +25,13 @@ export const registerDiscoveryTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ timeoutMs }) => {
-      const result = await runtime.runPromiseExit(
+    ({ timeoutMs }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* CastClient;
           return yield* client.discoverDevices(timeoutMs);
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };

@@ -1,5 +1,7 @@
-import type { Cause } from "effect";
+import type { Cause, Effect, ManagedRuntime } from "effect";
 import { Cause as CauseModule } from "effect";
+import type { CastClient } from "../domain/CastClient.ts";
+import type { CastError } from "../domain/errors.ts";
 
 export const formatSuccess = (data: unknown) => ({
   content: [
@@ -19,3 +21,12 @@ export const formatError = (cause: Cause.Cause<unknown>) => ({
   ],
   isError: true as const,
 });
+
+export const runTool = async <A>(
+  runtime: ManagedRuntime.ManagedRuntime<CastClient, CastError>,
+  effect: Effect.Effect<A, CastError, CastClient>,
+) => {
+  const result = await runtime.runPromiseExit(effect);
+  if (result._tag === "Failure") return formatError(result.cause);
+  return formatSuccess(result.value);
+};
