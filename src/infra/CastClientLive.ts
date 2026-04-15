@@ -40,6 +40,25 @@ const parseTxt = (txt: Buffer[]): Record<string, string> => {
   return result;
 };
 
+// Wrap a castv2-client callback-style function in a Promise.
+// The callback is expected to follow the (err, result) => void convention.
+const promisify = <T>(fn: (cb: (err: Error | null, result: T) => void) => void): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    fn((err, result) => {
+      if (err) reject(err);
+      else resolve(result);
+    });
+  });
+
+// Void variant: callback is (err: Error | null) => void with no result.
+const promisifyVoid = (fn: (cb: (err: Error | null) => void) => void): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    fn((err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+
 // Connect a PlatformSender (castv2-client Client) to a Cast device.
 const connectPlatform = (
   host: string,
@@ -65,18 +84,8 @@ const launchReceiver = (
   // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
 ): Effect.Effect<any, CastConnectionError> =>
   Effect.tryPromise({
-    try: () =>
-      // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-      new Promise<any>((resolve, reject) => {
-        client.launch(
-          DefaultMediaReceiver,
-          // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-          (err: Error | null, player: any) => {
-            if (err) reject(err);
-            else resolve(player);
-          },
-        );
-      }),
+    // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
+    try: () => promisify<any>((cb) => client.launch(DefaultMediaReceiver, cb)),
     catch: (e) => new CastConnectionError({ host, cause: e }),
   });
 
@@ -138,6 +147,74 @@ export const CastClientLive = Layer.scoped(
         }
       }),
     );
+
+    // Shared implementation for queueNext (+1) and queuePrev (-1).
+    const queueMove = (host: string, delta: 1 | -1) =>
+      Effect.gen(function* () {
+        const conn = yield* getConn(host);
+        yield* Effect.tryPromise({
+          try: () =>
+            new Promise<void>((resolve, reject) => {
+              // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
+              const currentSession = conn.player.media?.currentSession as any;
+              const currentId: number | undefined = currentSession?.currentItemId;
+              const items: Array<{ itemId: number }> = currentSession?.items ?? [];
+              const idx = items.findIndex((i) => i.itemId === currentId);
+              const target = items[idx + delta];
+              if (!target) {
+                resolve();
+                return;
+              }
+              conn.player.media.request(
+                { type: "QUEUE_UPDATE", currentItemId: target.itemId },
+                (err: Error | null) => {
+                  if (err) reject(err);
+                  else resolve();
+                },
+              );
+            }),
+          catch: (e) =>
+            new CastMediaError({
+              message: `queue${delta > 0 ? "Next" : "Prev"} on ${host} failed`,
+              cause: e,
+            }),
+        });
+      });
+
+    const getStatus = (host: string) =>
+      Effect.gen(function* () {
+        const conn = yield* getConn(host);
+        return yield* Effect.tryPromise({
+          try: () =>
+            new Promise<ReceiverStatus>((resolve, reject) => {
+              conn.client.getStatus(
+                // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
+                (err: Error | null, status: any) => {
+                  if (err) {
+                    reject(err);
+                    return;
+                  }
+                  resolve(
+                    new ReceiverStatus({
+                      volume: status?.volume?.level ?? 0.5,
+                      muted: status?.volume?.muted ?? false,
+                      applications: (status?.applications ?? []).map(
+                        // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
+                        (app: any) =>
+                          new AppInfo({
+                            appId: app.appId,
+                            displayName: app.displayName,
+                            sessionId: app.sessionId,
+                          }),
+                      ),
+                    }),
+                  );
+                },
+              );
+            }),
+          catch: (e) => new CastConnectionError({ host, cause: e }),
+        });
+      });
 
     return {
       discoverDevices: (timeoutMs = 5000) =>
@@ -233,40 +310,7 @@ export const CastClientLive = Layer.scoped(
           catch: (e) => new CastConnectionError({ host: "mdns", cause: e }),
         }),
 
-      getStatus: (host) =>
-        Effect.gen(function* () {
-          const conn = yield* getConn(host);
-          return yield* Effect.tryPromise({
-            try: () =>
-              new Promise<ReceiverStatus>((resolve, reject) => {
-                conn.client.getStatus(
-                  // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                  (err: Error | null, status: any) => {
-                    if (err) {
-                      reject(err);
-                      return;
-                    }
-                    resolve(
-                      new ReceiverStatus({
-                        volume: status?.volume?.level ?? 0.5,
-                        muted: status?.volume?.muted ?? false,
-                        applications: (status?.applications ?? []).map(
-                          // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                          (app: any) =>
-                            new AppInfo({
-                              appId: app.appId,
-                              displayName: app.displayName,
-                              sessionId: app.sessionId,
-                            }),
-                        ),
-                      }),
-                    );
-                  },
-                );
-              }),
-            catch: (e) => new CastConnectionError({ host, cause: e }),
-          });
-        }),
+      getStatus,
 
       playMedia: (host, contentUrl, contentType, metadata) =>
         Effect.gen(function* () {
@@ -302,13 +346,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.player.pause((err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.player.pause(cb)),
             catch: (e) =>
               new CastMediaError({
                 message: `pauseMedia on ${host} failed`,
@@ -321,13 +359,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.player.play((err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.player.play(cb)),
             catch: (e) =>
               new CastMediaError({
                 message: `resumeMedia on ${host} failed`,
@@ -340,13 +372,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.player.stop((err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.player.stop(cb)),
             catch: (e) =>
               new CastMediaError({
                 message: `stopMedia on ${host} failed`,
@@ -359,13 +385,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.player.seek(currentTime, (err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.player.seek(currentTime, cb)),
             catch: (e) =>
               new CastMediaError({
                 message: `seekMedia on ${host} failed`,
@@ -398,37 +418,16 @@ export const CastClientLive = Layer.scoped(
 
       getVolume: (host) =>
         Effect.gen(function* () {
-          const conn = yield* getConn(host);
-          return yield* Effect.tryPromise({
-            try: () =>
-              new Promise<{ level: number; muted: boolean }>((resolve, reject) => {
-                conn.client.getStatus(
-                  // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                  (err: Error | null, status: any) => {
-                    if (err) reject(err);
-                    else
-                      resolve({
-                        level: status?.volume?.level ?? 0.5,
-                        muted: status?.volume?.muted ?? false,
-                      });
-                  },
-                );
-              }),
-            catch: (e) => new CastConnectionError({ host, cause: e }),
-          });
+          // Delegate to getStatus — it already fetches receiver status including volume.
+          const status = yield* getStatus(host);
+          return { level: status.volume, muted: status.muted };
         }),
 
       setVolume: (host, level) =>
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.client.setVolume({ level }, (err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.client.setVolume({ level }, cb)),
             catch: (e) => new CastConnectionError({ host, cause: e }),
           });
         }),
@@ -437,13 +436,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.client.setVolume({ muted }, (err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.client.setVolume({ muted }, cb)),
             catch: (e) => new CastConnectionError({ host, cause: e }),
           });
         }),
@@ -501,13 +494,7 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                conn.client.stop(conn.player, (err: Error | null) => {
-                  if (err) reject(err);
-                  else resolve();
-                });
-              }),
+            try: () => promisifyVoid((cb) => conn.client.stop(conn.player, cb)),
             catch: (e) => new CastConnectionError({ host, cause: e }),
           });
         }),
@@ -516,25 +503,19 @@ export const CastClientLive = Layer.scoped(
         Effect.gen(function* () {
           const conn = yield* getConn(host);
           yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                const queueItems = items.map((item) => ({
-                  media: {
-                    contentId: item.media.contentId,
-                    contentType: item.media.contentType,
-                    streamType: "BUFFERED",
-                    metadata: item.media.metadata ?? {},
-                  },
-                }));
-                conn.player.queueLoad(
-                  queueItems,
-                  { startIndex: 0, repeatMode: "REPEAT_OFF" },
-                  (err: Error | null) => {
-                    if (err) reject(err);
-                    else resolve();
-                  },
-                );
-              }),
+            try: () => {
+              const queueItems = items.map((item) => ({
+                media: {
+                  contentId: item.media.contentId,
+                  contentType: item.media.contentType,
+                  streamType: "BUFFERED",
+                  metadata: item.media.metadata ?? {},
+                },
+              }));
+              return promisifyVoid((cb) =>
+                conn.player.queueLoad(queueItems, { startIndex: 0, repeatMode: "REPEAT_OFF" }, cb),
+              );
+            },
             catch: (e) =>
               new CastMediaError({
                 message: `loadQueue on ${host} failed`,
@@ -545,69 +526,8 @@ export const CastClientLive = Layer.scoped(
 
       // queueNext/queuePrev are implemented via queueUpdate with currentItemId jump.
       // The media controller's currentSession tracks the active item.
-      queueNext: (host) =>
-        Effect.gen(function* () {
-          const conn = yield* getConn(host);
-          yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                const currentSession = conn.player.media?.currentSession as any;
-                const currentId: number | undefined = currentSession?.currentItemId;
-                const items: Array<{ itemId: number }> = currentSession?.items ?? [];
-                const idx = items.findIndex((i) => i.itemId === currentId);
-                const next = items[idx + 1];
-                if (!next) {
-                  resolve();
-                  return;
-                }
-                conn.player.media.request(
-                  { type: "QUEUE_UPDATE", currentItemId: next.itemId },
-                  (err: Error | null) => {
-                    if (err) reject(err);
-                    else resolve();
-                  },
-                );
-              }),
-            catch: (e) =>
-              new CastMediaError({
-                message: `queueNext on ${host} failed`,
-                cause: e,
-              }),
-          });
-        }),
-
-      queuePrev: (host) =>
-        Effect.gen(function* () {
-          const conn = yield* getConn(host);
-          yield* Effect.tryPromise({
-            try: () =>
-              new Promise<void>((resolve, reject) => {
-                // biome-ignore lint/suspicious/noExplicitAny: castv2-client has no type definitions
-                const currentSession = conn.player.media?.currentSession as any;
-                const currentId: number | undefined = currentSession?.currentItemId;
-                const items: Array<{ itemId: number }> = currentSession?.items ?? [];
-                const idx = items.findIndex((i) => i.itemId === currentId);
-                const prev = items[idx - 1];
-                if (!prev) {
-                  resolve();
-                  return;
-                }
-                conn.player.media.request(
-                  { type: "QUEUE_UPDATE", currentItemId: prev.itemId },
-                  (err: Error | null) => {
-                    if (err) reject(err);
-                    else resolve();
-                  },
-                );
-              }),
-            catch: (e) =>
-              new CastMediaError({
-                message: `queuePrev on ${host} failed`,
-                cause: e,
-              }),
-          });
-        }),
+      queueNext: (host) => queueMove(host, 1),
+      queuePrev: (host) => queueMove(host, -1),
     };
   }),
 );
